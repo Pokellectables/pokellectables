@@ -527,12 +527,12 @@ footer {
 
 <!-- SHOP -->
 <section id="shop">
-  <div class="sec-header reveal">
+  <div class="sec-header">
     <div class="sec-eyebrow">Browse Stock</div>
     <h2 class="sec-title">Available Now</h2>
     <div class="sec-bar"></div>
   </div>
-  <div class="shop-controls reveal">
+  <div class="shop-controls">
     <div class="filter-tabs">
       <button class="filter-tab active" onclick="filterProducts('all',this)">All</button>
       <button class="filter-tab" onclick="filterProducts('sealed',this)">Sealed</button>
@@ -547,7 +547,7 @@ footer {
 
 <!-- FAQ -->
 <section id="faq" class="section-alt">
-  <div class="sec-header reveal">
+  <div class="sec-header">
     <div class="sec-eyebrow">Got Questions?</div>
     <h2 class="sec-title">FAQ</h2>
     <div class="sec-bar"></div>
@@ -829,19 +829,20 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const sb = {
   async query(path, opts = {}) {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+    if (opts.prefer) headers['Prefer'] = opts.prefer;
+    else if (opts.method && opts.method !== 'GET') headers['Prefer'] = 'return=representation';
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': opts.prefer || 'return=representation',
-        ...opts.headers
-      },
+      headers,
       method: opts.method || 'GET',
       body: opts.body ? JSON.stringify(opts.body) : undefined
     });
-    if (!res.ok) { const e = await res.text(); throw new Error(e); }
     const text = await res.text();
+    if (!res.ok) throw new Error(text);
     return text ? JSON.parse(text) : [];
   },
   async auth(action, email, password) {
@@ -1273,24 +1274,21 @@ document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
 // ─── INIT — Load products from Supabase ───
 async function init() {
-  try {
-    const rows = await sb.query('products?order=id.asc');
-    if (rows && rows.length > 0) {
-      products = rows.map(r => ({ ...r, basePrice: r.base_price }));
-    }
-    // If empty, products array keeps the local seed (Mega Dream box)
-  } catch(e) {
-    console.warn('Supabase load failed, using local data:', e.message);
-  }
+  // Always render local seed first so page is never blank
   renderProducts();
   updateDashboard();
-  // Trigger reveal on elements already in view
-  setTimeout(() => {
-    document.querySelectorAll('.reveal').forEach(el => {
-      const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight) el.classList.add('vis');
-    });
-  }, 100);
+
+  // Then try to load live data from Supabase
+  try {
+    const rows = await sb.query('products?order=id.asc&select=*');
+    if (rows && rows.length > 0) {
+      products = rows.map(r => ({ ...r, basePrice: parseFloat(r.base_price) }));
+      renderProducts();
+      updateDashboard();
+    }
+  } catch(e) {
+    console.warn('Supabase load failed, using local seed:', e.message);
+  }
 }
 init();
 
