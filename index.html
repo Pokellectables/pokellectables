@@ -278,7 +278,6 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding:3.5rem
   <div class="nav-right">
     <button class="btn btn-sm btn-ghost" onclick="openModal('login')">Log In</button>
     <button class="btn btn-sm btn-yellow" onclick="openModal('signup')">Sign Up</button>
-    <button class="btn btn-sm btn-admin" onclick="openAdmin()">⚙ Admin</button>
     <button class="cart-btn" onclick="toggleCart()">🛒 <span class="cart-badge" id="cart-count">0</span></button>
   </div>
 </nav>
@@ -490,6 +489,7 @@ footer{background:var(--dark2);border-top:1px solid var(--border);padding:3.5rem
 </div>
 
 <div class="toast" id="toast"></div>
+<div style="position:fixed;bottom:0.8rem;left:1rem;font-size:0.6rem;color:rgba(255,255,255,0.06);font-family:monospace;pointer-events:none;user-select:none">ctrl+shift+a</div>
 
 <script>
 const SUPABASE_URL = 'https://vkviqouparttcynycwpb.supabase.co';
@@ -823,6 +823,31 @@ if (urlParams.get('cancelled') === 'true') {
   window.history.replaceState({}, '', '/');
 }
 
+
+// ─── ADMIN AUTH ───
+const ADMIN_PASSWORD = 'pokellectables2025';
+
+function checkAdminPassword() {
+  const input = document.getElementById('admin-password-input').value;
+  if (input === ADMIN_PASSWORD) {
+    closeModal('admin-auth');
+    document.getElementById('admin-password-input').value = '';
+    openAdmin();
+  } else {
+    showToast('Incorrect password', true);
+    document.getElementById('admin-password-input').value = '';
+    document.getElementById('admin-password-input').focus();
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+    e.preventDefault();
+    openModal('admin-auth');
+    setTimeout(() => document.getElementById('admin-password-input').focus(), 100);
+  }
+});
+
 // Init — render immediately from seed, then try Supabase
 renderProducts();
 updateDashboard();
@@ -837,5 +862,20 @@ updateDashboard();
   } catch(e) { console.warn('Using local seed:', e.message); }
 })();
 </script>
+
+<!-- ADMIN PASSWORD MODAL -->
+<div class="modal-overlay" id="modal-admin-auth">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('admin-auth')">×</button>
+    <h2>Admin Access</h2>
+    <p class="sub">Enter your admin password to continue</p>
+    <div class="form-row">
+      <label>Password</label>
+      <input type="password" id="admin-password-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPassword()">
+    </div>
+    <button class="btn btn-yellow form-full-btn" onclick="checkAdminPassword()">Enter</button>
+    <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:1rem">Tip: Press <strong style="color:var(--yellow)">Ctrl + Shift + A</strong> to open this</p>
+  </div>
+</div>
 </body>
 </html>
