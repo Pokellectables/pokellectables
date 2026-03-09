@@ -1268,7 +1268,7 @@ function showToast(msg, isError = false) {
 // ─── SCROLL REVEAL ───
 const obs = new IntersectionObserver(entries => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); });
-}, { threshold: 0.1 });
+}, { threshold: 0.05 });
 document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
 // ─── INIT — Load products from Supabase ───
@@ -1277,29 +1277,20 @@ async function init() {
     const rows = await sb.query('products?order=id.asc');
     if (rows && rows.length > 0) {
       products = rows.map(r => ({ ...r, basePrice: r.base_price }));
-    } else {
-      // First run — seed the DB with the default Mega Dream box
-      const seed = products[0];
-      try {
-        await sb.query('products', {
-          method: 'POST',
-          body: {
-            name: seed.name, category: seed.category,
-            base_price: seed.basePrice, stock: seed.stock,
-            live: seed.live, badge: seed.badge,
-            image: seed.image, emoji: seed.emoji
-          }
-        });
-        // Reload after seeding
-        const seeded = await sb.query('products?order=id.asc');
-        if (seeded && seeded.length > 0) products = seeded.map(r => ({ ...r, basePrice: r.base_price }));
-      } catch(e) { /* use local seed */ }
     }
+    // If empty, products array keeps the local seed (Mega Dream box)
   } catch(e) {
-    console.warn('Could not load from Supabase, using local data:', e.message);
+    console.warn('Supabase load failed, using local data:', e.message);
   }
   renderProducts();
   updateDashboard();
+  // Trigger reveal on elements already in view
+  setTimeout(() => {
+    document.querySelectorAll('.reveal').forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight) el.classList.add('vis');
+    });
+  }, 100);
 }
 init();
 
@@ -1323,4 +1314,3 @@ if (urlParams.get('cancelled') === 'true') {
 </script>
 </body>
 </html>
-
