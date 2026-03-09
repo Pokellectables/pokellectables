@@ -987,9 +987,26 @@ function toggleCart() {
   overlay.classList.toggle('open');
 }
 
-function handleCheckout() {
-  showToast('⚡ In production: redirects to Stripe Checkout', false);
-  alert('Checkout via Stripe\n\nIn your live site, this connects to the Stripe Checkout API.\nCustomers pay securely and you receive the funds minus the ~3.5% fee (already baked into the prices shown).');
+async function handleCheckout() {
+  if (cart.length === 0) { showToast('Your cart is empty!', true); return; }
+  showToast('Redirecting to secure checkout...');
+  try {
+    const res = await fetch('/.netlify/functions/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: cart.map(c => ({ name: c.name, price: c.price, qty: c.qty }))
+      })
+    });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      showToast('Checkout error: ' + (data.error || 'Unknown error'), true);
+    }
+  } catch(e) {
+    showToast('Could not connect to checkout — try again', true);
+  }
 }
 
 // ─── AUTH MODALS ───
@@ -1285,6 +1302,25 @@ async function init() {
   updateDashboard();
 }
 init();
+
+// ─── HANDLE STRIPE RETURN ───
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('success') === 'true') {
+  cart = [];
+  updateCartUI();
+  setTimeout(() => {
+    showToast('✅ Payment successful! Thank you for your order.');
+  }, 500);
+  // Clean URL
+  window.history.replaceState({}, '', '/');
+}
+if (urlParams.get('cancelled') === 'true') {
+  setTimeout(() => {
+    showToast('Order cancelled — your cart is still saved.', true);
+  }, 500);
+  window.history.replaceState({}, '', '/');
+}
 </script>
 </body>
 </html>
+
