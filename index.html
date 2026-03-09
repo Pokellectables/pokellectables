@@ -849,19 +849,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Backup: click the logo 5 times quickly
-let logoClicks = 0, logoTimer;
-document.querySelector('.logo').addEventListener('click', (e) => {
-  e.preventDefault();
-  logoClicks++;
-  clearTimeout(logoTimer);
-  logoTimer = setTimeout(() => { logoClicks = 0; }, 2000);
-  if (logoClicks >= 5) {
-    logoClicks = 0;
-    openModal('admin-auth');
-    setTimeout(() => document.getElementById('admin-password-input').focus(), 100);
-  }
-});
 
 // Init — render immediately from seed, then try Supabase
 renderProducts();
@@ -889,7 +876,7 @@ updateDashboard();
       <input type="password" id="admin-password-input" placeholder="••••••••" onkeydown="if(event.key==='Enter')checkAdminPassword()">
     </div>
     <button class="btn btn-yellow form-full-btn" onclick="checkAdminPassword()">Enter</button>
-    <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:1rem">Tip: Press <strong style="color:var(--yellow)">Ctrl + Shift + P</strong> or click the logo 5× quickly</p>
+    <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:1rem">Tip: Press <strong style="color:var(--yellow)">Ctrl + Shift + P</strong> to open this</p>
   </div>
 </div>
 </body>
