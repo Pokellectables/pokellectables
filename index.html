@@ -11,7 +11,7 @@
   --yellow:#FFD700; --yellow-dim:rgba(255,215,0,0.12); --red:#E3350D;
   --dark:#08080E; --dark2:#0F0F18; --dark3:#161622; --card-bg:#12121C;
   --border:rgba(255,215,0,0.12); --border-light:rgba(255,255,255,0.06);
-  --text:#EEEEF5; --muted:#6868A0; --green:#4CAF50;
+  --text:#EEEEF5; --muted:#8282B8; --green:#4CAF50;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
@@ -653,6 +653,15 @@ function addToCart(id) {
 
 function removeFromCart(id) { cart = cart.filter(c => c.id !== id); updateCartUI(); }
 
+function updateCartQty(id, qty) {
+  const item = cart.find(c => c.id === id);
+  if (!item) return;
+  if (qty <= 0) { removeFromCart(id); return; }
+  const maxStock = (products.find(p => p.id === id) || {}).stock || 99;
+  item.qty = Math.min(qty, maxStock);
+  updateCartUI();
+}
+
 function updateCartUI() {
   const total = cart.reduce((s,c) => s + c.price * c.qty, 0);
   const count = cart.reduce((s,c) => s + c.qty, 0);
@@ -667,12 +676,24 @@ function updateCartUI() {
     document.getElementById('cart-total').textContent = fmtPrice(total);
     list.innerHTML = cart.map(c => {
       const thumb = c.image ? `<img src="${c.image}" alt="${c.name}">` : c.emoji;
+      const maxQty = (products.find(p => p.id === c.id) || {}).stock || 10;
+      const options = Array.from({length: maxQty}, (_, i) => i + 1)
+        .map(n => `<option value="${n}" ${n === c.qty ? 'selected' : ''}>${n}</option>`)
+        .join('');
       return `<div class="cart-item">
         <div class="cart-item-thumb">${thumb}</div>
         <div class="cart-item-info">
           <div class="cart-item-name">${c.name}</div>
           <div class="cart-item-price">${fmtPrice(c.price * c.qty)}</div>
-          <div class="cart-item-qty">Qty: ${c.qty}</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.3rem">
+            <label style="font-size:0.72rem;color:var(--muted);font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase">Qty</label>
+            <select onchange="updateCartQty(${c.id}, parseInt(this.value))"
+              style="background:var(--dark3);border:1px solid var(--border);color:var(--text);
+              font-family:'Barlow Condensed',sans-serif;font-size:0.85rem;font-weight:600;
+              padding:0.2rem 0.5rem;border-radius:3px;cursor:pointer;outline:none;">
+              ${options}
+            </select>
+          </div>
         </div>
         <button class="cart-remove-btn" onclick="removeFromCart(${c.id})">✕</button>
       </div>`;
